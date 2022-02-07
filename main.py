@@ -11,26 +11,29 @@ import rich
 def get_netbox_sites():
     pass
 
-
+#Gather config options for connecting to devices, graph plotting, and ip ranges for polling.
 USER=config('USR')
 PASSWORD=config('PASS')
 SECRET=config('SECRET')
 
-#^[A-Za-z0-9\.-]+
 G = pgv.AGraph()
 G.node_attr['style'] = 'filled'
 
+command = config('COMMAND', default='sh cdp neighbor detail')
+file_name=config('OUTPUT_FILENAME', cast=str)
+
+
+network_ip = config('NETWORK_IP', cast=str) # First 2 or 3 octets
+try:
+    device_ip = config('DEVICE_IPs', cast=lambda v: [int(s.strip()) for s in v.split(' ')])
+except ValueError:
+    device_ip = config('DEVICE_IPs', cast=lambda v: [float(s.strip()) for s in v.split(' ')])
 
 #connect to devices
 device = Site(USER, PASSWORD, SECRET)
-devices = [2,4,5]
-output = device.Mass_push(devices, 'sh cdp neighbor detail', '10.52.1')
-file_name='Fayette-Topology.png'
+output = device.Mass_push(device_ip, command, network_ip)
 
 
-#Prepare output
-#print(output)
-#print('\n\n\n\n')
 splt = output.split('\n')
 
 ips_host = ''

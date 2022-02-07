@@ -1,34 +1,24 @@
 
 ## Getting started:
 
-1.  Rename the *creds_example.env* file to *creds.env*.
+1.  Clone this repo to your system with your preferred method.
 
-2.  Then, change the environment variables from EX_USER to USER, etc. . .
-    Store your credentials in the creds.env folder.
+2.  Insert your credentials/variables in the example.env file, 
+    USR=
+    PASS=
+    SECRET=
+    
+    Example poll for 10.52.1.2 etc. . .: 
+    NETWORK_IP=10.52.1
+    DEVICE_IPs=2 4 5
 
-3.  Open main.py
+    COMMAND='sh cdp neighbor detail'
+    OUTPUT_FILENAME=YourFilename-Topology.png
 
-4.  Ensure that credentials are properly stored in USER, PASSWORD, and SECRET variables.
-
-5.  Initialize the Site class as:
-
-    from Mass_push import Site  
-
-    device = Site(USER, PASSWORD, SECRET)
-
-6.  You can now call the other functions in the class to provision devices.
+2.  Rename the *example.env* file to *.env*. NOTE: . files are hidden by default on most systems.
 
 
-### Push to multiple devices at once 
-
-1.  Define the address of the device(s) in the format of:  x.x.x [1, 2, 3, 4] and pass the device list to the mass_push function. 
-
-2.  Example: Site.Mass_push('192.168.1', [2, 3, 4], 'show run')
-        This example would contact 192.168.1.2, 192.168.1.3, 192.168.1.4
-
-### Debugging with basic CLI
-
-1.  Call: `Site.enter_cli()` to enter a basic CLI mode.
-
+6.  Start the program.  
+    python /path/to/main.py  or python3 /path/to/main.py
 
 
