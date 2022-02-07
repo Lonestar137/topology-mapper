@@ -1,0 +1,7 @@
+__pycache__/
+creds_example.env
+main2.py
+test_push.py
+*.env
+*.png
+
