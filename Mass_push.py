@@ -3,6 +3,7 @@ from netmiko import ConnectHandler
 #from dotenv import dotenv_values
 import getpass
 import time
+from rich.console import Console
 
 
 class Site:
@@ -13,6 +14,7 @@ class Site:
         self.password = password
         self.secret = secret
         self.ip=''
+        self.console = Console()
 
     def Connect(self):
         #Connect to a device.
@@ -123,7 +125,13 @@ class Site:
         for i in self.devices:
             self.ip = network_ip+'.'+str(i)
             print('Connecting to ' + self.ip)
-            ssh = self.Connect()
+            try:
+                ssh = self.Connect()
+            except:
+                #If fail to connect, then skip
+                self.console.print(self.ip+' failed to connect.', style='blue on white')
+                continue
+
             ssh.enable()
             if self.cmds.find('sh') != -1 and ssh.check_enable_mode() == True:
                 #TODO: Split the line with the sh command to prevent errors, i.e. enter conf mode before the show command it won't show.

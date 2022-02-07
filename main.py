@@ -5,6 +5,7 @@ import time
 import threading
 import re
 import pygraphviz as pgv
+import rich
 
 
 
@@ -19,7 +20,7 @@ G.node_attr['style'] = 'filled'
 
 device = Site(USER, PASSWORD, SECRET)
 #devices = [1, 2, 3, 4, 5, 7, 8, 10, 11, 12]
-devices = [2, 3, 4, 5, 6, 7, 8, 10, 11]
+devices = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 21, 22, 23, 24, 28, 29, 40, 42]
 output=device.Mass_push(devices, 'sh cdp neighbor detail', '10.40.1')
 
 print(output)
@@ -37,16 +38,19 @@ for i in splt:
         ip = i.split(': ')[1]
         if bool(re.search('10\.[0-9]+\.2\.', ip)):
             #AP ip found
-            print('enterd')
             G.add_node(ip)
             n = G.get_node(ip)
-            n.attr['fillcolor'] = '#701d1c'
+            n.attr['fillcolor'] = '#C11C1C'
         elif bool(re.search('10\.[0-9]+\.1\.', ip)):
             #Switch ip found
-            print('enterd')
             G.add_node(ip)
             n = G.get_node(ip)
-            n.attr['fillcolor'] = '#2470a6'
+            n.attr['fillcolor'] = '#3890E9'
+        elif bool(re.search('10\.[0-9]+\.1\.1', ip)):
+            #router ip found
+            G.add_node(ip)
+            n = G.get_node(ip)
+            n.attr['fillcolor'] = '#5DA713'
 
         print(ip)
         try:
