@@ -36,18 +36,36 @@ output = device.Mass_push(device_ip, command, network_ip)
 
 splt = output.split('\n')
 
+temp = []
+for i in splt:
+    if i.find('current: ') != -1:
+        temp.append(i)
+    elif i.find('Device ID') != -1:
+        temp.append(i)
+    elif i.find('IP address: ') != -1:
+        temp.append(i)
+    elif i.find('Total cdp entries') != -1:
+        temp.append(i)
+    elif i.find('------') != -1:
+        temp.append(i)
+
+
+
+splt=temp
+
 ips_host = ''
 ip = ''
 for i in splt:
-    #first_word_found=bool(re.search('^[A-Za-z0-9\.-]+',i))
-    #other_words_found=bool(re.search(' [A-Za-z0-9\.-]+',i))
+
     if i.find('current: ') != -1:
         curr_host = i.split(' ')[1]+'\n'
         print('current host', curr_host)
 
     if i.find('IP address: ') != -1:
         #Concatenate IPs until no more ips in cdp neighbor for host
-        ip += i.split(': ')[1]+'\n'
+        if ip.find(i.split(': ')[1]) == -1:
+            #If not in ip, then add it.
+            ip += i.split(': ')[1]+'\n'
         continue
     elif ip != '':
         #Add current node, make it blue only switches are logged into
@@ -55,21 +73,21 @@ for i in splt:
         h = G.get_node(curr_host)
         h.attr['fillcolor'] = '#3890E9'
         #No more IPs for the neighbor, then generate the node
-        if bool(re.search('10\.[0-9]+\.2\.', ip)):
+        if bool(re.search('10\.[0-9][0-9]+\.2\.', ip)):
             #AP ip found
             G.add_node(ip)
 
             #set node colors
             n = G.get_node(ip)
             n.attr['fillcolor'] = '#C11C1C'
-        elif bool(re.search('10\.[0-9]+\.1\.1$', ip)):
+        elif bool(re.search('10\.[0-9][0-9]+\.1\.1$', ip)):
             #router ip found
             G.add_node(ip)
 
             #Set colors for the nodes
             n = G.get_node(ip)
             n.attr['fillcolor'] = '#5DA713'
-        elif bool(re.search('10\.[0-9]+\.1\.', ip)):
+        elif bool(re.search('10\.[0-9][0-9]+\.1\.', ip)):
             #Switch ip found
             G.add_node(ip)
 
@@ -94,22 +112,4 @@ G.draw(file_name)
 
 #thread1 = threading.Thread(target=device.Mass_push, args=([48], 'sh run | i hostname', '10.251.11'))
 #thread1.start()
-
-
-#from netmiko import ConnectHandler
-#import pygraphviz as pgv
-#
-#def console_output()
-#    #Prints the graph in console.
-#    G = pgv.AGraph()
-#    G.add_node("a")
-#    G.add_edge("b", "c")
-#    print(G)
-#
-#def connect()
-#
-#ips = ['10.100.1.1', '10.100.1.2', '10.100.1.3', '10.100.1.4']
-#G = pgv.AGraph()
-#G.add_node("a")
-#G.add_edge("b", "c")
 
