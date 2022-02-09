@@ -24,18 +24,17 @@ file_name=config('OUTPUT_FILENAME', cast=str)
 
 
 network_ip = config('NETWORK_IP', cast=str) # First 2 or 3 octets
-try:
-    device_ip = config('DEVICE_IPs', cast=lambda v: [int(s.strip()) for s in v.split(' ')])
-except ValueError:
-    device_ip = config('DEVICE_IPs', cast=lambda v: [float(s.strip()) for s in v.split(' ')])
 
-#connect to devices
+device_ip = config('DEVICE_IPs', cast=lambda v: [s.strip() for s in v.split(' ')])
+
+#Connect to devices
 device = Site(USER, PASSWORD, SECRET)
 output = device.Mass_push(device_ip, command, network_ip)
 
 
 splt = output.split('\n')
 
+#Filter out unwanted lines.
 temp = []
 for i in splt:
     if i.find('current: ') != -1:
@@ -53,7 +52,7 @@ for i in splt:
 
 splt=temp
 
-ips_host = ''
+#Create nodes, assign color
 ip = ''
 for i in splt:
 
@@ -80,7 +79,7 @@ for i in splt:
             #set node colors
             n = G.get_node(ip)
             n.attr['fillcolor'] = '#C11C1C'
-        elif bool(re.search('10\.[0-9][0-9]+\.1\.1$', ip)):
+        elif bool(re.search('10\.[0-9][0-9]+\.1\.1$', ip)) or ip.find('10.251.1.36') != -1 or ip.find('10.251.1.35') != -1:
             #router ip found
             G.add_node(ip)
 
@@ -104,7 +103,10 @@ for i in splt:
     ip=''
 
 
+#Graph layout type.  Default uses dot
 G.layout(prog="dot")
+
+#Draw to .png file.
 G.draw(file_name)
 #print(G)
 

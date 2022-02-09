@@ -124,12 +124,12 @@ class Site:
         #Actually pushes the CMDs.
         for i in self.devices:
             self.ip = network_ip+'.'+str(i)
-            print('Connecting to ' + self.ip)
+            self.console.print('Connecting to ' + self.ip, style='green')
             try:
                 ssh = self.Connect()
             except:
                 #If fail to connect, then skip
-                self.console.print(self.ip+' failed to connect.', style='blue on white')
+                self.console.print(self.ip+' failed to connect.', style='red')
                 continue
 
             ssh.enable()
@@ -145,37 +145,4 @@ class Site:
             ssh.disconnect()
         return total_output
         
-
-#Sample run statement.
-if __name__ == "__main__":
-    #load_dotenv() #works without having to parse dictionary if on Linux
-    
-    USER=config('USER')
-    PASSWORD=config('PASS')
-    SECRET=config('SECRET')
-   
-    exit()
-    run = Site(USER, PASSWORD, SECRET)
-
-
-    #Connect to a device and enter cli mode
-    #run.Enter_cli()#TODO: Add if statements for other modes and exiting those modes.
-
-
-    #Optional:  enter the last octet of the specific device IP you want to grab. 
-    #TODO: Account for subnets other than /24+
-    devices=[48]
-
-    #Enter your commands here:
-    config = """
-
-    reload in 007:00
-    y
-
-    y
-
-    """
-    #run.Enter_cli()
-    run.Mass_push(devices, config, '10.251.11') #Can pass and empty array to specify a range or pass specific devices
-
 
