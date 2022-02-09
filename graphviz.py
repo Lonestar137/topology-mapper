@@ -20,6 +20,7 @@ G.add_edge("b", "c")
 #Purpose:  
 #Using a graph module, given an array i of n ip's, create a topology map of related nodes.
 #TODO: pulls ip from Netbox database given a site id
+#sts
 
 
 
