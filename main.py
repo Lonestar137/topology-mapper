@@ -5,11 +5,61 @@ import time
 import threading
 import re
 import pygraphviz as pgv
-import rich
+from rich.console import Console
 
 
 def get_netbox_sites():
     pass
+
+def singlemode(USER, PASSWORD, SECRET, cmd):
+    network_ip = config('NETWORK_IP', cast=str) # First 2 or 3 octets
+    device_ip = config('DEVICE_IPs', cast=lambda v: [s.strip() for s in v.split(' ')])
+
+    console = Console()
+    console.print('Generate topology map? (y/n)', style='bold green')
+    if input() == 'y':
+        console.print('Generating...', style='bold yellow')
+        #Connect to devices
+        device = Site(USER, PASSWORD, SECRET)
+        device_output = device.Mass_push(device_ip, cmd, network_ip)
+        return device_output
+
+    else:
+        console.print('Aborting...', style='bold red') 
+        return ''
+        exit()
+
+
+
+
+def multimode(USER, PASSWORD, SECRET, cmd):
+    device_output=''
+    device = Site(USER, PASSWORD, SECRET)
+
+    network_ip = config('NETWORK_IP')
+    device_ip = config('DEVICE_IPs', cast=lambda v: [s.strip() for s in v.split(' ')])
+
+    console = Console()
+    console.print('Generate topology map? (y/n)', style='bold green')
+    if input() == 'y':
+        console.print('Generating...', style='bold yellow')
+        device = Site(USER, PASSWORD, SECRET)
+        device.pool(device_ip, cmd, network_ip)
+
+        # Wait for all threads to finish before proceeding.
+        while device.future.done() == False:
+            time.sleep(1)
+        time.sleep(2)
+
+        # loop through device outputs and append to string.
+        for i in device.output_array:
+            device_output += str(i)
+        print(device_output)
+    else:
+        console.print('Aborting...', style='bold red') 
+        exit()
+    return device_output
+
 
 #Gather config options for connecting to devices, graph plotting, and ip ranges for polling.
 USER=config('USR')
@@ -23,16 +73,16 @@ command = config('COMMAND', default='sh cdp neighbor detail')
 file_name=config('OUTPUT_FILENAME', cast=str)
 
 
-network_ip = config('NETWORK_IP', cast=str) # First 2 or 3 octets
-
-device_ip = config('DEVICE_IPs', cast=lambda v: [s.strip() for s in v.split(' ')])
-
-#Connect to devices
-device = Site(USER, PASSWORD, SECRET)
-output = device.Mass_push(device_ip, command, network_ip)
+if config('MODE') == 'multimode': 
+    output=multimode(USER, PASSWORD, SECRET, command)
+elif config('MODE') == 'singlemode':
+    output=singlemode(USER, PASSWORD, SECRET, command)
+else:
+    print('Please set the env variable MODE equal to multimode or singlemode.')
 
 
 splt = output.split('\n')
+
 
 #Filter out unwanted lines.
 temp = []

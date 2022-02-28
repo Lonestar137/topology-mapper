@@ -1,9 +1,11 @@
 from netmiko import ConnectHandler
-#from dotenv import load_dotenv
-#from dotenv import dotenv_values
 import getpass
 import time
 from rich.console import Console
+
+from concurrent.futures import ThreadPoolExecutor
+from time import sleep
+
 
 
 class Site:
@@ -16,19 +18,31 @@ class Site:
         self.ip=''
         self.console = Console()
 
-    def Connect(self):
+    def Connect(self, ip=None):
         #Connect to a device.
-        if self.ip == '':
+        if self.ip == '' and ip == None:
             self.ip = input('Enter an IP to connect: ')
+        
+        if ip != None:
+            # For multithreading
+            Device = {
+                    "ip": ip,
+                    "username": self.username,
+                    "password": self.password,
+                    "secret": self.secret,
+                    "device_type": "cisco_ios"
+                    }
+            return ConnectHandler(**Device)
 
-        self.Device = {
-                "ip": self.ip,
-                "username": self.username,
-                "password": self.password,
-                "secret": self.secret,
-                "device_type": "cisco_ios"
-                }
-        return ConnectHandler(**self.Device)
+        else:
+            self.Device = {
+                    "ip": self.ip,
+                    "username": self.username,
+                    "password": self.password,
+                    "secret": self.secret,
+                    "device_type": "cisco_ios"
+                    }
+            return ConnectHandler(**self.Device)
         
 
     def Enter_cli(self, ip=None):
@@ -56,69 +70,13 @@ class Site:
                 ssh.write_channel(self.cmd)
 
     def Mass_push(self, devices: list, cmds: str, network_ip=None):
-        #List of device IP's is passed
         self.devices = devices
         self.cmds = cmds
+
+        #List of device IP's is passed
         counter=0
         if network_ip == None:
             network_ip = input('Enter the network IP for the site: ')
-
-        #Detect if no devices were passed.
-        if self.devices == []:
-            ask = input('No device IPs were specified.  Provision devices by range?')
-            if ask[0:1] == 'y' or ask[0:1] == 'Y':
-                # if yes do this
-                self.ask_range = input('From ip: ')
-                while type(self.ask_range) != int:
-                    try:
-                        self.ask_range=int(self.ask_range)
-                    except:
-                        print('Must be an integer.  Example: 2 to start at [NetworkIP].2')
-                        self.ask_range = input('From ip: ')
-
-                self.ask_range_end = input('End ip: ')
-                while type(self.ask_range_end) != int:
-                    try:
-                        self.ask_range_end = int(self.ask_range_end)
-                    except:
-                        print('Must be an integer.  Example: 10 to end on the [NetworkIP].10')
-                        self.ask_range_end = input('End ip: ')
-                
-                counter = self.ask_range
-                while counter <= self.ask_range_end:
-                    self.devices.append(counter)
-                    counter+=1
-
-                for i in self.devices:
-                    print(network_ip + '.' +str(i) + '\n')
-                ask = input('The above devices will be provisioned.  Continue? (y/n)')
-                if ask[0:1] == 'y' or ask[0:1] == 'Y':
-                    pass
-                elif ask[0:1] == 'n' or ask[0:1] == 'N':
-                    print('Option No selected.  Exiting session.')
-                    exit()
-                else:
-                    counter = 0
-                    while counter <= 5:
-                        print('Response must be yes or no. (y/n, Y/N)')
-                        ask = input('Continue to provision the above devices? (Y/N)')
-                        counter+=1
-                        if counter == 5:
-                            print('Maximum number of tries exceeded.  Exiting session. . .')
-                            exit()
-
-                        if ask[0:1] == 'Y' or ask[0:1] == 'y':
-                            break
-                        elif ask[0:1] == 'n' or ask[0:1] == 'N':
-                            print('Option No selected.  Exiting session.')
-                            exit()
-                        else:
-                            pass
-
-            else:
-                #When option no is selected.
-                print('Option No selected.  Exiting session.')
-                exit()
 
         total_output=''
         #Actually pushes the CMDs.
@@ -133,16 +91,71 @@ class Site:
                 continue
 
             ssh.enable()
-            if self.cmds.find('sh') != -1 and ssh.check_enable_mode() == True:
-                #TODO: Split the line with the sh command to prevent errors, i.e. enter conf mode before the show command it won't show.
-                self.response=str(ssh.send_command(self.cmds))
-                print(self.response)#Necessary for unit test
-                total_output+='\ncurrent: '+self.ip+'\n'+self.response
-            else: 
-                ssh.write_channel(self.cmds)
+            for line in self.cmds.split('\n'):
+                if line.find('sh') != -1 and ssh.check_enable_mode() == True:
+                    #TODO: Split the line with the sh command to prevent errors, i.e. enter conf mode before the show command it won't show.
+                    self.response=str(ssh.send_command(line))
+                    print(self.response)#Necessary for unit test
+                    total_output+='\ncurrent: '+self.ip+'\n'+self.response
+                else: 
+                    ssh.write_channel(line)
 
 
             ssh.disconnect()
         return total_output
-        
+
+    def setDevices(self, devices: list, cmds: str, network_ip: str):
+        self.devices=[]
+        for i in devices:
+            self.devices.append(network_ip+'.'+str(i))
+
+        return self.devices
+
+    def push(self, ip: str, cmds: str):
+        self.total_output=''
+        #Actually pushes the CMDs.
+        self.console.print('Connecting to ' + ip, style='green')
+        try:
+            ssh = self.Connect(ip)
+        except:
+            #If fail to connect, then skip
+            self.console.print(ip+' failed to connect.', style='red')
+            return 0
+
+        ssh.enable()
+        for line in cmds.split('\n'):
+            if line.find('sh') != -1 and ssh.check_enable_mode() == True:
+                #TODO: Split the line with the sh command to prevent errors, i.e. enter conf mode before the show command it won't show.
+                self.response=str(ssh.send_command(line))
+                self.console.print(ip+' response: ', style='green')
+                #print(self.response)#Necessary for unit test
+                #self.total_output+='\ncurrent: '+ip+'\n'+self.response
+                output='\ncurrent: '+ip+'\n'+self.response
+                self.output_array.append(output)
+            else: 
+                ssh.write_channel(line)
+
+        time.sleep(0.5)
+        ssh.disconnect()
+        return self.total_output
+
+
+    def pool(self, devices, cmds, network_ip):
+        # Array for storing all the devices outputs asynchronously.
+        self.output_array=[]
+
+        self.setDevices(devices, cmds, network_ip)
+
+        #Concurrency thread pool initialization
+        executor = ThreadPoolExecutor(10) # number of threads in pool
+        for ip in self.devices:
+            self.future = executor.submit(self.push, ip, cmds)
+            time.sleep(0.1)
+
+        #future.done() #returns False if still working on tasks.
+        #future.result() # Returns return of submitted function.
+
+
+if __name__ == '__main__':
+    pass
 

@@ -3,4 +3,5 @@ main2.py
 test_push.py
 .env
 *.png
+.main*
 
